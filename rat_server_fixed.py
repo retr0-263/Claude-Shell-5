@@ -267,7 +267,7 @@ def client_listener(session_id, client_socket, key):
 # ═══════════════════════════════════════════════════════════════
 
 def send_command(session_id, key, command, timeout=30):
-    """Send command with timeout protection"""
+    """Send command with timeout protection and proper buffer handling"""
     if session_id not in SESSIONS:
         return None, "Session not found"
     
@@ -286,13 +286,29 @@ def send_command(session_id, key, command, timeout=30):
         client_socket.settimeout(timeout)
         
         try:
-            # Receive response
-            response_data = client_socket.recv(1024 * 1024)
-            if not response_data:
+            # Receive response with proper buffering for large data
+            response_buffer = b''
+            chunk_size = 1024 * 1024  # 1MB chunks
+            max_size = 100 * 1024 * 1024  # 100MB max
+            
+            while len(response_buffer) < max_size:
+                try:
+                    chunk = client_socket.recv(chunk_size)
+                    if not chunk:
+                        break  # Connection closed
+                    response_buffer += chunk
+                except socket.timeout:
+                    # If we got some data, that's okay
+                    if response_buffer:
+                        break
+                    else:
+                        raise  # No data received before timeout
+            
+            if not response_buffer:
                 remove_session(session_id)
                 return None, "Connection closed"
             
-            response = decrypt_data(key, response_data)
+            response = decrypt_data(key, response_buffer)
             return response, None
         finally:
             client_socket.settimeout(old_timeout)
