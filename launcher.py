@@ -67,9 +67,10 @@ class IntegratedSetupLauncher:
             ("3", "Advanced C2 Configuration", "yellow"),
             ("4", "Payload Obfuscation Setup", "magenta"),
             ("5", "Database Initialization", "cyan"),
-            ("6", "Deploy & Test", "red"),
-            ("7", "View Configuration Summary", "white"),
-            ("8", "Exit", "white")
+            ("6", "Install Dependencies", "bright_magenta"),
+            ("7", "Deploy & Test", "red"),
+            ("8", "View Configuration Summary", "white"),
+            ("9", "Exit", "white")
         ]
         
         for key, label, color in options:
@@ -260,6 +261,237 @@ class IntegratedSetupLauncher:
                 f.write(bash_script)
             print(self.style.color("✓ Generated deploy_linux.sh", 'bright_green'))
     
+    def install_dependencies(self):
+        """Install project dependencies with sub-menu"""
+        while True:
+            print("\n" + self.style.bold("╔════════════════════════════════════════╗"))
+            print(self.style.bold("║     DEPENDENCY INSTALLATION MANAGER      ║"))
+            print(self.style.bold("╚════════════════════════════════════════╝"))
+            
+            print("\n📦 Available Components to Install:\n")
+            options = [
+                ("1", "Python Dependencies (requirements.txt)", "bright_cyan"),
+                ("2", "Node.js Dependencies (npm)", "bright_yellow"),
+                ("3", "Install All", "bright_green"),
+                ("4", "View Installed Packages", "bright_blue"),
+                ("5", "Back to Main Menu", "white")
+            ]
+            
+            for key, label, color in options:
+                colored_label = self.style.color(label, color)
+                print(f"  {key}. {colored_label}")
+            
+            choice = input("\n" + self.style.color("Select option: ", 'bright_cyan')).strip()
+            
+            if choice == "1":
+                self.install_python_deps()
+                self.display_installation_status()
+            elif choice == "2":
+                self.install_node_deps()
+                self.display_installation_status()
+            elif choice == "3":
+                self.install_python_deps()
+                self.install_node_deps()
+                self.display_installation_status()
+            elif choice == "4":
+                self.display_installation_status()
+            elif choice == "5":
+                break
+            else:
+                print(self.style.color("❌ Invalid option!", 'bright_red'))
+    
+    def install_python_deps(self):
+        """Install Python dependencies from requirements.txt"""
+        print("\n" + self.style.color("↓ Installing Python dependencies...", 'bright_yellow'))
+        
+        req_file = Path.cwd() / 'requirements.txt'
+        if not req_file.exists():
+            print(self.style.color(f"✗ requirements.txt not found at {req_file}", 'bright_red'))
+            return False
+        
+        try:
+            import subprocess
+            result = subprocess.run(
+                [sys.executable, '-m', 'pip', 'install', '-r', str(req_file)],
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            
+            if result.returncode == 0:
+                print(self.style.color("✓ Python dependencies installed successfully", 'bright_green'))
+                
+                # Show summary
+                with open(req_file, 'r') as f:
+                    packages = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+                
+                print(self.style.color(f"\n📊 Installed {len(packages)} packages:", 'bright_cyan'))
+                for pkg in packages[:10]:  # Show first 10
+                    print(f"   • {self.style.color(pkg, 'bright_green')}")
+                if len(packages) > 10:
+                    print(f"   • {self.style.color(f'... and {len(packages)-10} more', 'bright_green')}")
+                
+                return True
+            else:
+                print(self.style.color(f"✗ Installation failed: {result.stderr}", 'bright_red'))
+                return False
+        except Exception as e:
+            print(self.style.color(f"✗ Error: {str(e)}", 'bright_red'))
+            return False
+    
+    def install_node_deps(self):
+        """Install Node.js dependencies with npm"""
+        print("\n" + self.style.color("↓ Installing Node.js dependencies...", 'bright_yellow'))
+        
+        # Check if npm is available
+        try:
+            import subprocess
+            result = subprocess.run(
+                ['npm', '--version'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0:
+                print(self.style.color("⚠ npm not found. Install Node.js first.", 'bright_yellow'))
+                return False
+            
+            npm_version = result.stdout.strip()
+            print(self.style.color(f"✓ Found npm {npm_version}", 'bright_green'))
+            
+            # Check for package.json
+            pkg_json = Path.cwd() / 'package.json'
+            if not pkg_json.exists():
+                print(self.style.color(f"⚠ package.json not found at {pkg_json}", 'bright_yellow'))
+                return False
+            
+            # Run npm install
+            result = subprocess.run(
+                ['npm', 'install'],
+                capture_output=True,
+                text=True,
+                timeout=300,
+                cwd=str(Path.cwd())
+            )
+            
+            if result.returncode == 0:
+                print(self.style.color("✓ Node.js dependencies installed successfully", 'bright_green'))
+                
+                # Parse package.json to show dependencies
+                try:
+                    import json
+                    with open(pkg_json, 'r') as f:
+                        pkg_data = json.load(f)
+                    
+                    deps = pkg_data.get('dependencies', {})
+                    dev_deps = pkg_data.get('devDependencies', {})
+                    
+                    print(self.style.color(f"\n📊 Installed Dependencies:", 'bright_cyan'))
+                    print(self.style.color(f"   Production: {len(deps)} packages", 'bright_green'))
+                    print(self.style.color(f"   Development: {len(dev_deps)} packages", 'bright_green'))
+                    
+                    if deps:
+                        print(self.style.color("\n   Prod Packages:", 'bright_blue'))
+                        for pkg in list(deps.keys())[:5]:
+                            print(f"   • {self.style.color(pkg, 'bright_green')}")
+                        if len(deps) > 5:
+                            print(f"   • {self.style.color(f'... and {len(deps)-5} more', 'bright_green')}")
+                except Exception as e:
+                    print(self.style.color(f"   (Could not parse package.json: {e})", 'bright_yellow'))
+                
+                return True
+            else:
+                print(self.style.color(f"✗ Installation failed: {result.stderr}", 'bright_red'))
+                return False
+                
+        except FileNotFoundError:
+            print(self.style.color("⚠ npm command not found. Install Node.js and npm first.", 'bright_yellow'))
+            return False
+        except Exception as e:
+            print(self.style.color(f"✗ Error: {str(e)}", 'bright_red'))
+            return False
+    
+    def display_installation_status(self):
+        """Display what's currently installed and available"""
+        print("\n" + self.style.bold("╔════════════════════════════════════════╗"))
+        print(self.style.bold("║     INSTALLATION STATUS REPORT           ║"))
+        print(self.style.bold("╚════════════════════════════════════════╝"))
+        
+        # Python packages status
+        print("\n" + self.style.color("📦 Python Environment:", 'bright_cyan'))
+        try:
+            import subprocess
+            result = subprocess.run(
+                [sys.executable, '-m', 'pip', 'list'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')[2:]  # Skip headers
+                py_packages = [l.split()[0] for l in lines if l.strip()]
+                
+                print(self.style.color(f"   ✓ {len(py_packages)} packages installed", 'bright_green'))
+                
+                # Check for specific required packages
+                required = ['colorama', 'cryptography', 'requests', 'flask']
+                print("\n   Required Packages:")
+                for pkg in required:
+                    status = "✓" if any(pkg.lower() in p.lower() for p in py_packages) else "✗"
+                    color = 'bright_green' if status == "✓" else 'bright_red'
+                    print(f"   {self.style.color(status, color)} {pkg}")
+        except Exception as e:
+            print(self.style.color(f"   ⚠ Could not check pip list: {e}", 'bright_yellow'))
+        
+        # Node.js status
+        print("\n" + self.style.color("🔧 Node.js Environment:", 'bright_cyan'))
+        try:
+            import subprocess
+            result = subprocess.run(
+                ['npm', '--version'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
+                npm_ver = result.stdout.strip()
+                print(self.style.color(f"   ✓ npm {npm_ver} installed", 'bright_green'))
+                
+                # Check node_modules
+                node_modules = Path.cwd() / 'node_modules'
+                if node_modules.exists():
+                    pkg_count = len(list(node_modules.iterdir()))
+                    print(self.style.color(f"   ✓ {pkg_count} modules installed in node_modules/", 'bright_green'))
+                else:
+                    print(self.style.color(f"   ✗ node_modules/ not found", 'bright_red'))
+            else:
+                print(self.style.color(f"   ✗ npm not found", 'bright_red'))
+        except FileNotFoundError:
+            print(self.style.color(f"   ✗ npm not installed", 'bright_red'))
+        except Exception as e:
+            print(self.style.color(f"   ⚠ Could not check npm: {e}", 'bright_yellow'))
+        
+        # Show recently configured
+        print("\n" + self.style.color("⚙️  Recently Configured:", 'bright_cyan'))
+        if self.config:
+            config_items = [
+                ('c2', 'C2 Server Configuration'),
+                ('payload', 'Payload Configuration'),
+                ('obfuscation', 'Obfuscation Settings'),
+                ('database', 'Database Configuration')
+            ]
+            
+            for key, label in config_items:
+                if key in self.config:
+                    print(f"   ✓ {self.style.color(label, 'bright_green')}")
+        else:
+            print(self.style.color("   (No configuration yet - run setup options first)", 'bright_yellow'))
+        
+        print("\n" + self.style.bold("═" * 42))
+    
     def show_summary(self):
         """Display configuration summary"""
         if not self.config:
@@ -314,10 +546,12 @@ class IntegratedSetupLauncher:
             elif choice == "5":
                 self.init_database()
             elif choice == "6":
-                self.deploy_and_test()
+                self.install_dependencies()
             elif choice == "7":
-                self.show_summary()
+                self.deploy_and_test()
             elif choice == "8":
+                self.show_summary()
+            elif choice == "9":
                 print(self.style.color("Exiting T0OL-B4S3-263 Setup Launcher...", 'bright_cyan'))
                 sys.exit(0)
             else:
