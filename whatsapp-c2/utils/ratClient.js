@@ -144,6 +144,25 @@ export class RATClient {
   }
 
   /**
+   * Check connection status
+   */
+  async checkStatus() {
+    if (!this.connected) {
+      try {
+        await this.connect();
+      } catch (err) {
+        throw new Error('Cannot connect to RAT server: ' + err.message);
+      }
+    }
+    
+    return {
+      connected: this.connected,
+      active_sessions: this.sessions.length,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
    * Disconnect
    */
   disconnect() {

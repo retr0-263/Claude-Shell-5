@@ -517,7 +517,7 @@ def main():
     PORT = 4444
     
     # Banner
-    banner = f"""{Colors.CYAN}{Colors.BOLD}
+    banner = rf"""{Colors.CYAN}{Colors.BOLD}
     
            _   _          _                     ____   __  _____ 
           | | | |_  _____| | _____ _ __        |___ \ / /_|___ / 

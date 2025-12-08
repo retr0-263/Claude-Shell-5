@@ -529,6 +529,7 @@ def main():
             print(f"{Colors.BOLD}MAIN MENU{Colors.END}")
             print(f"{Colors.CYAN}{'='*60}{Colors.END}")
             
+            global listener_running, listener_socket
             choice = input(f"{Colors.BOLD}{Colors.MAGENTA}ULTIMA> {Colors.END}").strip()
             
             if choice == '1':
@@ -538,7 +539,6 @@ def main():
                     print(f"{Colors.YELLOW}[!] Listener already running{Colors.END}")
             
             elif choice == '2':
-                global listener_running
                 listener_running = False
                 if listener_socket:
                     listener_socket.close()

