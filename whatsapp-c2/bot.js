@@ -10,6 +10,7 @@ import chalk from 'chalk';
 import fs from 'fs';
 import { ResponseFormatter } from './utils/formatter.js';
 import { RATClient } from './utils/ratClient.js';
+import { HelpHandler } from './utils/helpHandler.js';
 import { SurveillanceCommands } from './commands/surveillance.js';
 import { CredentialCommands } from './commands/credentials.js';
 import { SystemCommands } from './commands/system.js';
@@ -170,6 +171,12 @@ class WhatsAppC2Bot {
       const command = args.shift().toLowerCase();
 
       ResponseFormatter.log('info', `Command received: ${command} from ${sender.split('@')[0]}`);
+
+      // Check if it's a help command first
+      if (command === 'help' || command === 'menu' || command === '?') {
+        await this.handleHelpCommand(from, text, args);
+        return;
+      }
 
       // Route command
       await this.routeCommand(from, command, args, msg);
@@ -386,13 +393,35 @@ class WhatsAppC2Bot {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // BASIC COMMAND HANDLERS (Not in modules)
+  // HELP & INFORMATION HANDLERS
   // ═══════════════════════════════════════════════════════════
 
+  async handleHelpCommand(chatId, fullText, args) {
+    // Parse the full help request
+    const helpRequest = HelpHandler.parseHelpCommand(fullText);
+
+    if (!helpRequest) {
+      await this.sock.sendMessage(chatId, { 
+        text: ResponseFormatter.error('Invalid help syntax. Try /help') 
+      });
+      return;
+    }
+
+    const response = HelpHandler.processHelpRequest(helpRequest);
+
+    if (!response) {
+      await this.sock.sendMessage(chatId, { 
+        text: ResponseFormatter.error('Help topic not found. Try /help') 
+      });
+      return;
+    }
+
+    await this.sock.sendMessage(chatId, { text: response });
+  }
+
   async cmdHelp(chatId) {
-    await this.sock.sendMessage(chatId, { 
-      text: ResponseFormatter.helpMenu() 
-    });
+    const response = ResponseFormatter.mainMenu();
+    await this.sock.sendMessage(chatId, { text: response });
   }
 
   async cmdPing(chatId) {

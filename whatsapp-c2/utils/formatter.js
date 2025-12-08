@@ -1,5 +1,11 @@
 import chalk from 'chalk';
 import moment from 'moment';
+import { 
+  COMMAND_METADATA, 
+  getAllCategories, 
+  getTotalCommandCount, 
+  getCommand 
+} from './commandMetadata.js';
 
 /**
  * Response Formatter - Makes everything look beautiful
@@ -318,5 +324,216 @@ export class ResponseFormatter {
       default:
         console.log(chalk.white(`[${timestamp}] ${message}`));
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ENHANCED HELP SYSTEM
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Main help menu with all commands and categories
+   */
+  static mainMenu() {
+    const categories = getAllCategories();
+    const totalCommands = getTotalCommandCount();
+    
+    let menu = `╔═════════════════════════════════════════════════╗
+║         🎯 T0OL-B4S3-263 COMMAND HUB 🎯      ║
+╚═════════════════════════════════════════════════╝
+
+📊 *TOTAL COMMANDS:* ${totalCommands}
+
+*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*
+📁 *COMMAND CATEGORIES:*
+*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*\n`;
+
+    categories.forEach((cat) => {
+      menu += `\n${cat.emoji} *${cat.displayName}*\n`;
+      menu += `   ${cat.description}\n`;
+      menu += `   📊 ${cat.commandCount} commands\n`;
+      menu += `   → Send: /menu ${cat.name}\n`;
+    });
+
+    menu += `\n*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*
+📖 *DETAILED HELP:*
+*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*
+
+/help <category>
+Get all commands in a category
+
+/help -command
+Get detailed help for a specific command
+
+Example: /help -screenshot`;
+
+    return menu;
+  }
+
+  /**
+   * Category menu with all commands in that category
+   */
+  static categoryMenu(categoryName) {
+    const category = Object.values(COMMAND_METADATA).find(
+      c => c.category === categoryName.toLowerCase()
+    );
+
+    if (!category || !category.commands) {
+      return this.error(`Category "${categoryName}" not found`);
+    }
+
+    const commands = Object.values(category.commands);
+    
+    let menu = `╔═════════════════════════════════════════════════╗
+║  ${category.categoryEmoji} ${category.categoryName.padEnd(40)} ║
+╚═════════════════════════════════════════════════╝
+
+${category.description}
+
+*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*\n`;
+
+    commands.forEach((cmd) => {
+      menu += `\n${cmd.emoji} */${cmd.name}*`;
+      
+      if (cmd.aliases && cmd.aliases.length > 0) {
+        menu += ` (${cmd.aliases.map(a => `/${a}`).join(', ')})`;
+      }
+      
+      menu += `\n   ${cmd.shortDesc}\n`;
+      menu += `   → /help -${cmd.name}\n`;
+    });
+
+    menu += `\n*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*`;
+    menu += `\n\nℹ️ _Tap a command above for detailed help_`;
+
+    return menu;
+  }
+
+  /**
+   * Detailed help for a specific command
+   */
+  static commandHelp(commandName) {
+    const command = getCommand(commandName);
+
+    if (!command) {
+      return this.error(`Command "${commandName}" not found. Try /help for menu.`);
+    }
+
+    let help = `╔═════════════════════════════════════════════════╗
+║  ${command.emoji} ${command.name.toUpperCase().padEnd(40)} ║
+╚═════════════════════════════════════════════════╝\n`;
+
+    help += `*📝 Short Description:*
+${command.shortDesc}\n`;
+
+    help += `*📖 Full Description:*
+${command.fullDesc}\n`;
+
+    help += `*💻 Usage:*
+\`${command.usage}\`\n`;
+
+    help += `*📌 Example:*
+\`${command.example}\`\n`;
+
+    if (command.aliases && command.aliases.length > 0) {
+      help += `*🔤 Aliases:*
+${command.aliases.map(a => `• /${a}`).join('\n')}\n`;
+    }
+
+    if (command.danger) {
+      help += `\n⚠️  *DANGEROUS COMMAND*
+This command can cause system damage or data loss!
+Use with caution on authorized targets only!\n`;
+    }
+
+    help += `*⏱️ Timeout:* ${command.timeout ? command.timeout + 'ms' : 'Dynamic'}\n`;
+
+    help += `\n*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*`;
+    help += `\n\n📚 _Back to main menu: /help_`;
+
+    return help;
+  }
+
+  /**
+   * All commands list for terminal
+   */
+  static allCommandsList() {
+    const categories = getAllCategories();
+    let list = `\n${'═'.repeat(70)}\n`;
+    list += `${'T0OL-B4S3-263 COMMAND REFERENCE'.padStart(45)}\n`;
+    list += `${'═'.repeat(70)}\n\n`;
+
+    categories.forEach((cat) => {
+      list += `${cat.emoji} ${cat.displayName} (${cat.commandCount} commands)\n`;
+      list += `${'-'.repeat(70)}\n`;
+
+      const commands = Object.values(COMMAND_METADATA[cat.name].commands);
+      
+      commands.forEach((cmd) => {
+        const aliases = cmd.aliases ? `(${cmd.aliases.join(', ')})` : '';
+        const danger = cmd.danger ? ' ⚠️ DANGER' : '';
+        list += `  ${cmd.emoji} /${cmd.name.padEnd(15)} ${aliases.padEnd(25)} ${cmd.shortDesc}${danger}\n`;
+      });
+
+      list += '\n';
+    });
+
+    list += `${'═'.repeat(70)}\n`;
+    list += `Use 'help -command' for detailed information\n`;
+    list += `Example: help -screenshot\n`;
+    list += `${'═'.repeat(70)}\n`;
+
+    return list;
+  }
+
+  /**
+   * Terminal-style detailed command help
+   */
+  static terminalCommandHelp(commandName) {
+    const command = getCommand(commandName);
+
+    if (!command) {
+      return `Error: Command "${commandName}" not found`;
+    }
+
+    let help = `\n${'═'.repeat(70)}\n`;
+    help += `${command.emoji} COMMAND: /${command.name}\n`;
+    help += `${'═'.repeat(70)}\n\n`;
+
+    help += `📝 SHORT DESC:\n`;
+    help += `   ${command.shortDesc}\n\n`;
+
+    help += `📖 FULL DESCRIPTION:\n`;
+    const fullDescLines = command.fullDesc.split('\n');
+    fullDescLines.forEach(line => {
+      help += `   ${line}\n`;
+    });
+    help += '\n';
+
+    help += `💻 USAGE:\n`;
+    help += `   ${command.usage}\n\n`;
+
+    help += `📌 EXAMPLE:\n`;
+    help += `   ${command.example}\n\n`;
+
+    if (command.aliases && command.aliases.length > 0) {
+      help += `🔤 ALIASES:\n`;
+      command.aliases.forEach(alias => {
+        help += `   /${alias}\n`;
+      });
+      help += '\n';
+    }
+
+    if (command.danger) {
+      help += `⚠️  DANGEROUS OPERATION:\n`;
+      help += `   This command can cause system damage or data loss!\n`;
+      help += `   Only use on authorized targets with proper authorization!\n\n`;
+    }
+
+    help += `⏱️  TIMEOUT: ${command.timeout ? command.timeout + 'ms' : 'Dynamic'}\n`;
+    help += `📂 CATEGORY: ${command.category}\n`;
+
+    help += `\n${'═'.repeat(70)}\n`;
+
+    return help;
   }
 }

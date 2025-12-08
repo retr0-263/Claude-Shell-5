@@ -9,7 +9,8 @@ export class RATClient {
   constructor(host, port, encryptionKey, maxRetries = 3) {
     this.host = host;
     this.port = port;
-    this.encryptionKey = Buffer.from(encryptionKey, 'utf-8');
+    // Store encryption key as-is (will be used for validation)
+    this.encryptionKey = encryptionKey;
     this.currentSession = null;
     this.sessions = [];
     this.socket = null;
@@ -83,27 +84,37 @@ export class RATClient {
   }
 
   /**
-   * Encrypt data using base64 (matches Python socket communication)
+   * Encrypt data using base64 (compatible with socket communication)
+   * Note: Python server expects base64 encoded messages for socket transport
    */
   encrypt(data) {
-    if (typeof data !== 'string') {
-      data = JSON.stringify(data);
+    try {
+      if (typeof data !== 'string') {
+        data = JSON.stringify(data);
+      }
+      // Encode to base64 for network transmission
+      return Buffer.from(data).toString('base64');
+    } catch (error) {
+      console.error('Encryption error:', error);
+      throw new Error('Failed to encrypt data: ' + error.message);
     }
-    return Buffer.from(data).toString('base64');
   }
 
   /**
-   * Decrypt data from base64 (matches Python socket communication)
+   * Decrypt data from base64 (matches socket communication)
+   * Note: Python server sends base64 encoded responses
    */
   decrypt(data) {
     try {
       if (Buffer.isBuffer(data)) {
-        return data.toString('utf-8');
+        data = data.toString('utf-8');
       }
-      return Buffer.from(data, 'base64').toString('utf-8');
+      // Decode from base64
+      const decrypted = Buffer.from(data, 'base64').toString('utf-8');
+      return decrypted;
     } catch (error) {
-      console.error('Decrypt error:', error);
-      return data; // Return as-is if decryption fails
+      console.error('Decryption error:', error);
+      throw new Error('Failed to decrypt data: ' + error.message);
     }
   }
 

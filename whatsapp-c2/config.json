@@ -2,7 +2,7 @@
   "ratServer": {
     "host": "127.0.0.1",
     "port": 4444,
-    "encryptionKey": "YOUR_ENCRYPTION_KEY_HERE",
+    "encryptionKey": "H/Wb55GpvUm/+ON2cmkpvV7x0ujsZXyM0/Nn8VIvUWA=",
     "apiPort": 5000
   },
   "whatsapp": {

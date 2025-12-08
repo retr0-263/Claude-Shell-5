@@ -5,10 +5,17 @@
   "main": "bot.js",
   "type": "module",
   "scripts": {
+    "setup": "node setup.js",
     "start": "node bot.js",
     "dev": "node --watch bot.js"
   },
-  "keywords": ["whatsapp", "bot", "c2", "rat", "hacking"],
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "c2",
+    "rat",
+    "hacking"
+  ],
   "author": "Hxcker-263",
   "license": "MIT",
   "dependencies": {
