@@ -249,10 +249,15 @@ def client_listener(session_id, client_socket, key):
                 if not data:
                     break
             except socket.timeout:
+                # Timeout is normal - just continue checking
                 continue
-            except:
+            except (BrokenPipeError, ConnectionResetError):
+                # Connection lost
                 break
-    except:
+            except Exception as e:
+                # Other socket errors
+                break
+    except Exception as e:
         pass
     finally:
         remove_session(session_id)
@@ -266,25 +271,37 @@ def send_command(session_id, key, command, timeout=30):
     if session_id not in SESSIONS:
         return None, "Session not found"
     
-    client_socket = SESSIONS[session_id]['socket']
+    with SESSION_LOCK:
+        if session_id not in SESSIONS:
+            return None, "Session not found"
+        client_socket = SESSIONS[session_id]['socket']
     
     try:
         # Send command
-        client_socket.send(encrypt_data(key, command))
+        encrypted_cmd = encrypt_data(key, command)
+        client_socket.send(encrypted_cmd)
         
         # Set timeout for response
+        old_timeout = client_socket.gettimeout()
         client_socket.settimeout(timeout)
         
-        # Receive response
-        response_data = client_socket.recv(1024 * 1024)
-        if not response_data:
-            return None, "Connection closed"
-        
-        response = decrypt_data(key, response_data)
-        return response, None
+        try:
+            # Receive response
+            response_data = client_socket.recv(1024 * 1024)
+            if not response_data:
+                remove_session(session_id)
+                return None, "Connection closed"
+            
+            response = decrypt_data(key, response_data)
+            return response, None
+        finally:
+            client_socket.settimeout(old_timeout)
         
     except socket.timeout:
         return None, f"Command timed out after {timeout} seconds"
+    except (BrokenPipeError, ConnectionResetError):
+        remove_session(session_id)
+        return None, "Connection lost"
     except Exception as e:
         return None, f"Error: {str(e)}"
 

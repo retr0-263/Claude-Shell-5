@@ -29,11 +29,11 @@ class WhatsAppC2Bot {
     this.commandPrefix = this.config.whatsapp.prefix;
     this.ownerNumbers = this.config.whatsapp.ownerNumbers;
     
-    // Command modules
-    this.surveillanceCmd = null;
-    this.credentialCmd = null;
-    this.systemCmd = null;
-    this.funCmd = null;
+    // Command modules will be initialized after socket connection
+    this.surveillanceCmd = new SurveillanceCommands(null, null);
+    this.credentialCmd = new CredentialCommands(null, null);
+    this.systemCmd = new SystemCommands(null, null);
+    this.funCmd = new FunCommands(null, null);
   }
 
   /**
